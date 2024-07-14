@@ -151,12 +151,15 @@ def update():
             if player_z < 2:
                 jumping = False
                 player_z = 0
-                
- 
             
-            # y jump
+#             for boat in boats:
+#                 if player.colliderect(<boat>):
+#                     death()
+           
+ 
+# def death():
+#    go to death screen,points,and try again button
     
-    #     player_y -= jump((pygame.time.get_ticks() - jump_start)/1000,player_jumpDur,player_PE)
    
 
 def draw():
