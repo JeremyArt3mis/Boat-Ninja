@@ -20,6 +20,8 @@ player_PE = 0
 player_jumpDur = 1
 jump_start = 0
 jumping = False
+points = 0
+touching_boat = True
 
 
 #enemy
@@ -47,11 +49,14 @@ player_right = pygame.transform.scale(pygame.image.load("player_right.png"),(pla
 player_left = pygame.transform.scale(pygame.image.load("player_left.png"),(player_size,player_size))
 player_shadow = pygame.transform.scale(pygame.image.load("player_shadow.png"),(player_size,(player_size / 3 )))
 player_direction = player_up
+player_alive = True
 
 #backround
 dock = pygame.transform.scale(pygame.image.load("pole.png"),(player_size * 4,player_size * 4))
 backround = pygame.transform.scale(pygame.image.load("backround.png"),(600,550))
-
+backround_y = 0
+death_img = pygame.transform.scale(pygame.image.load("death.png"),(600,550))
+font  = pygame.font.Font("Font.ttf",30)
 #rect
 enemy = pygame.transform.scale(pygame.image.load("boat.png"),(200,100))
 obj_enemy = enemy.get_rect(center = (enemys_x[0],enemy_y))
@@ -59,11 +64,6 @@ obj_shadow = player_shadow.get_rect(center = (0,0))
 obj_player = player_direction.get_rect(center = (player_x,player_y))
 obj_jumpman = player_direction.get_rect(center = (player_x,player_y))
 obj_dock = dock.get_rect(center = (200,615))
-obj_enemies = [enemy.get_rect(center = (enemys_x[0],enemy_y)),
-               enemy.get_rect(center = (enemys_x[1],enemy_y - 100)),
-               enemy.get_rect(center = (enemys_x[2],enemy_y - 200)),
-               enemy.get_rect(center = (enemys_x[3],enemy_y - 300)),
-               enemy.get_rect(center = (enemys_x[4],enemy_y - 400))]
 #fps
 clock = pygame.time.Clock()
 
@@ -107,27 +107,38 @@ def keyboard_input():
         player_PE = 0
 
 def update_camera(boat_y_spd):
-    global boats,dock
+    global boats,dock,backround_y,points
+    boat_height = 0
     for boat in boats:
         boat.y -= boat_y_spd
+        boat_height = boat.size[1]
     obj_dock.y -= boat_y_spd
+    backround_y -= boat_y_spd * 0.2
+    if backround_y > screen.get_height():
+        backround_y = 0
+    points += boat_y_spd 
+    #print(abs(points//boat_height))
 
             
 
 
 def update():
-    global enemy_x,enemy_y,obj_player,obj_enemy,player_x,player_y,player_y_spd,time,obj_shadow,jumping,player_jumpDur,player_PE,jump_start,player_z,player_z_spd,boats
+    global enemy_x,enemy_y,obj_player,obj_enemy,player_x,player_y,player_y_spd,time,obj_shadow,jumping,player_jumpDur,player_PE,jump_start,player_z,player_z_spd,boats,backround_y,touching_boat,player_alive
+    touching_boat = False
     for boat in boats:
         boat.update() 
+        if obj_player.colliderect(boat.get_hitbox()) or obj_player.colliderect(obj_dock) and not jumping:
+            touching_boat = True
     enemy_x += 1
+    backround_y += -math.cos(pygame.time.get_ticks() * 0.01) * 0.4
     for i in range(5):
         if moving[i]:
             enemys_x[i] += enemys_spd[i]
+    for boat in boats:
+        pass
     
     time += 1
-    for i in range(0,5):
-        if time == random_r[i]:
-            moving[i] = True
+    
     if abs(player_y_spd) < 0.05:
         player_y_spd = 0
     else:
@@ -151,25 +162,20 @@ def update():
             if player_z < 2:
                 jumping = False
                 player_z = 0
-            
-#             for boat in boats:
-#                 if player.colliderect(<boat>):
-#                     death()
-           
+    elif not player_alive:
+        death()     
  
-# def death():
-#    go to death screen,points,and try again button
+            
+            # y jump
     
+    #     player_y -= jump((pygame.time.get_ticks() - jump_start)/1000,player_jumpDur,player_PE)
    
 
 def draw():
-    global obj_player,obj_enemy,obj_shadow,player_z,boats
+    global obj_player,obj_enemy,obj_shadow,player_z,boats,backround_y,touching_boat,player_alive
     screen.fill((198, 245, 240))
-    #screen.blit(backround,(0,0))
-    for j in range(5):
-        obj_enemies[j] = enemy.get_rect(center = (enemys_x[j],enemy_y - (j * 100) - 100))
-        obj_enemies[j].width -= 40
-        obj_enemies[j].height -= 45
+    screen.blit(backround,(0,backround_y))
+    screen.blit(backround,(0,backround_y - screen.get_height()))
     screen.blit(dock,obj_dock)
     obj_player = player_direction.get_rect(center = (player_x,player_y - player_z))
     obj_shadow = player_shadow.get_rect(center = (player_x,player_y + player_size * 0.5))
@@ -180,12 +186,27 @@ def draw():
     
     if player_y_spd > 0:
         screen.blit(player_direction,obj_jumpman) 
+    if not touching_boat and player_z == 0:
+        player_alive = False
+        print("Debug")
+    if not player_alive:
+        death()
     pygame.display.update()
+        
+def death():
+    global points
+    #fade
+    screen.blit(death_img,(0,0))
+    death_point = font.render("Points",False,(255,255,255))
+    death_font = font.render(f"{round(-points)}",False,(255,255,255))
+    screen.blit(death_point,(215,220))
+    screen.blit(death_font,(260,255))
 
 while True:
     clock.tick(60) 
     event_handler()
-    keyboard_input()
+    if player_alive:
+        keyboard_input()
     update()
     draw()
     
